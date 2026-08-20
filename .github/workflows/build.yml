@@ -1,0 +1,32 @@
+name: build-image
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Verify overlay checksums
+        run: |
+          if [ -f overlay/MANIFEST.sha256 ]; then
+            ( cd overlay && sha256sum -c MANIFEST.sha256 )
+          fi
+
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          tags: qwen38-27b-dflash2:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

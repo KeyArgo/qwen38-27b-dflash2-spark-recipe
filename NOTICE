@@ -1,0 +1,10 @@
+Copyright 2026 The SGLang Authors
+
+This product includes software developed by the SGLang project
+(https://github.com/sgl-project/sglang), licensed under the Apache License,
+Version 2.0. The files under overlay/ are derived from that project and are
+distributed under the same license.
+
+The SGLang runtime image (lmsysorg/sglang:qwen38-27b) is built and maintained
+by NVIDIA Corporation and is governed by the NVIDIA Deep Learning Container
+License. See /NGC-DL-CONTAINER-LICENSE in the base image for its terms.
