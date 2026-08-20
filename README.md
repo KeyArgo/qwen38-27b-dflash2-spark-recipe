@@ -1,7 +1,8 @@
-# Qwen3.8-27B · DFlash2 recipe
+# Qwen3.8-27B · DFlash2 recipe (DGX Spark / GB10)
 
 A self-contained, reproducible **recipe** that adds **DFlash2** (decoupled
-speculative decoding) to the official SGLang `qwen38-27b` runtime image.
+speculative decoding) to the official SGLang `qwen38-27b` runtime image, tuned
+and validated for a single **NVIDIA DGX Spark (GB10)**.
 
 DFlash2 is a speculative-decoding draft that proposes several tokens ahead
 with a small parallel draft head, then verifies them against the target model
