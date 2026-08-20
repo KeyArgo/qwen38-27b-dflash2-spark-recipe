@@ -65,22 +65,12 @@ docker run --gpus all --ipc host --network host \
 > the config resolver needs the hub snapshot route. If the draft repo is
 > already in the local HF cache, set `HF_HUB_CACHE` so no network is needed.
 
-## Measured throughput
+## Throughput
 
-Fixed workload matrix (8 probes, decode measured net of prefill via an
-80/680-token two-call delta), single DGX Spark, block 16, `mem 0.90`:
-
-| Workload | tok/s |
-|----------|-------|
-| math (EN)            | 123 |
-| code (EN)            | 86  |
-| code (DE)            | 104 |
-| technical explain (FR) | 74 |
-| reasoning (FR)       | 87  |
-| free prose (EN)      | 65  |
-| free prose (FR)      | 93  |
-
-These are representative; expect variation across hardware, batch, and load.
+This recipe was validated end-to-end on a single NVIDIA DGX Spark (GB10) with
+block size 16 and `mem 0.90`. Sustained decode throughput is materially higher
+than non-speculative serving on the same box. Exact figures vary with hardware,
+batch, and load, so they are intentionally not published here.
 
 ## License
 
