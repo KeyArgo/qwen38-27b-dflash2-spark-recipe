@@ -1,6 +1,6 @@
-# Qwen3.8-27B · DFlash2 build
+# Qwen3.8-27B · DFlash2 recipe
 
-A self-contained, reproducible build that adds **DFlash2** (decoupled
+A self-contained, reproducible **recipe** that adds **DFlash2** (decoupled
 speculative decoding) to the official SGLang `qwen38-27b` runtime image.
 
 DFlash2 is a speculative-decoding draft that proposes several tokens ahead
