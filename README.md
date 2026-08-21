@@ -19,6 +19,7 @@ so `fork` kernels, quantization (NVFP4) and CUDA-graph handling are preserved.
 | `overlay/`   | The 5 DFlash2 Python modules (the adapted source) |
 | `scripts/build.sh` | Portable local build driver (Docker only) |
 | `scripts/run.sh`   | Validated one-command launcher (all flags + safety checks) |
+| `scripts/nvfp4-guard.sh` | Checkpoint-format / boot / quality / clock gates (run before quoting any result) |
 | `.github/workflows/build.yml` | CI build on any GitHub runner |
 | `overlay/MANIFEST.sha256` | Pin of the overlay bytes, verified at build |
 
@@ -52,9 +53,24 @@ over your own internet on first build — allow a few minutes.
 
 Two pieces, both public on Hugging Face:
 
-- **Target weights** — `RadixArk/Qwen3.8-27B-NVFP4` (~22GB), the NVFP4
-  checkpoint this recipe is tuned for. Either a local model dir or an HF
-  cache entry works.
+- **Target weights** — `sakamakismile/Qwen3.8-27B-MTP-NVFP4` (~20GB), a
+  **verified true-NVFP4** (`nvfp4-pack-quantized`, W4A4) quantization of the
+  original `Qwen/Qwen3.8-27B` with the native MTP head preserved in bf16.
+  Either a local model dir or an HF cache entry works.
+  (Uncensored alternative with measured-identical scores:
+  `sakamakismile/Qwen3.8-27B-AEON-ULTIMATE-UNCENSORED-NVFP4`.)
+
+> **Warning — fake-NVFP4 checkpoints.** `RadixArk/Qwen3.8-27B-NVFP4` and
+> `unsloth/Qwen3.8-27B-NVFP4` are actually **FP8** (`float-quantized`, 8-bit)
+> checkpoints mislabeled as NVFP4 (and byte-identical re-uploads of each other).
+> Served with this recipe they produce deterministic gibberish: empty-field
+> JSON loops (`{"name": "", "", ""}`), repeated fragments, stray tags.
+> Always verify a downloaded target before use:
+>
+> ```bash
+> ./scripts/nvfp4-guard.sh check /path/to/model_dir
+> # must PASS: format=nvfp4-pack-quantized bits=4
+> ```
 - **DFlash2 draft** — `z-lab/Qwen3.8-27B-DFlash2` (~2.6GB), revision-pinned:
   `50307d4c4cde6860d4eee73e2547cd786fe8e8a4`. Download into a local HF cache:
 
@@ -96,29 +112,42 @@ Wait for `The server is fired up and ready to roll!` in
 BASE_URL=http://127.0.0.1:30000 MODEL=qwen38-27b ./bench-matrix.sh
 ```
 
+Before quoting any number: gate quality and clock first —
+
+```bash
+./scripts/nvfp4-guard.sh quality 30000   # junk detectors must PASS
+./scripts/nvfp4-guard.sh clock 30000     # >=2000 MHz under load, else speeds invalid
+```
+
 (`bench-matrix.sh` is the frozen engine-agnostic battery from
 `hasso5703/dgx-spark-qwen38`: 8 workloads × EN/FR/DE, greedy, two-call delta
 net of prefill. Results are comparable across engines and boxes.)
 
 ## Throughput
 
-Measured on two DGX Spark (GB10) boxes, same image, same flags, GPU clocks
-verified under load (A 2411 MHz, B 2398 MHz). Each box: two warm runs of the
-frozen battery, averaged. Cold-boot first runs are excluded (radix-cache warmup
-inflates short-workload numbers; e.g. tech-FR read 180 on both boxes cold vs
-73 warm). All values tok/s, decode net of prefill.
+Measured with **true-NVFP4 checkpoints, quality-gated** (populated JSON fields,
+correct arithmetic anchor, no repetition loops) and **SM clock sampled under
+load** so throttled boxes can't pollute numbers.
 
-| Box | math (EN) | code (EN) | code (DE) | tech (FR) | reason (FR) | prose (EN) | prose (FR) |
-|---|---|---|---|---|---|---|---|
-| A | 117.0 | 85.0 | 103.4 | 73.3 | 86.5 | 50.8 | 56.1 |
-| B | 116.3 | 81.3 | 102.6 | 73.1 | 86.2 | 50.6 | 55.9 |
-| **avg** | **116.7** | **83.2** | **103.0** | **73.2** | **86.3** | **50.7** | **56.0** |
+| Config | Clock | math (EN) | code (EN) | code (DE) | tech (FR) | reason (FR) | prose (EN) | prose (FR) | prose (DE) |
+|---|---|---|---|---|---|---|---|---|---|
+| **DFlash2 + true NVFP4** (AEON), box A, two runs avg | 2496 MHz | **45.6** | **37.4** | **23.4** | **29.8** | **42.9** | **20.3** | **19.9** | **16.3** |
 
-prose (DE) is consistently skipped by the battery's guard (short-answer delta
-artifact, Δtok≈0) — same on both boxes; not a failure.
+All values tok/s, decode net of prefill, greedy, frozen battery. Two independent
+runs reproduced within 0.3 tok/s. Graded answer quality is identical to
+non-speculative serving — DFlash2 changes speed, not outputs (same answers,
+right and wrong, byte-for-byte, on a 10-question graded battery).
 
-Raw per-run JSONs (bench-matrix-dflash2-a-warm.json, bench-matrix-dflash2-b-final.json)
-live on the boxes.
+Raw evidence: `results/results-A-aeon-nvfp4-clock2496.json`.
+
+### Historical numbers (invalid — kept for the record)
+
+The previously published table (math ~117 / code ~83 / prose ~51, boxes A+B at
+~2400 MHz) was measured against `RadixArk/Qwen3.8-27B-NVFP4`, which later
+proved to be an **FP8 checkpoint mislabeled as NVFP4** that produces
+deterministic gibberish with this recipe (see the warning above). Those
+throughputs are real measurements of a broken model — not achievable by any
+usable configuration and not comparable to the gated numbers above.
 
 ## License
 
