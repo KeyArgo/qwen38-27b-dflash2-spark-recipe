@@ -19,6 +19,7 @@ so `fork` kernels, quantization (NVFP4) and CUDA-graph handling are preserved.
 | `overlay/`   | The 5 DFlash2 Python modules (the adapted source) |
 | `scripts/build.sh` | Portable local build driver (Docker only) |
 | `scripts/run.sh`   | Validated one-command launcher (all flags + safety checks) |
+| `.github/workflows/build.yml` | CI build on any GitHub runner |
 | `overlay/MANIFEST.sha256` | Pin of the overlay bytes, verified at build |
 
 ## Why the base image needs this
